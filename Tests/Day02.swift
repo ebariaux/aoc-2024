@@ -81,8 +81,4 @@ struct Day02Tests {
     #expect(String(describing: challenge.part2()) == "4")
   }
 
-  @Test("Demo", arguments: [1, 1, 1])
-  func simpleTest(a: Int) async throws {
-    #expect(a == 1)
-  }
 }
