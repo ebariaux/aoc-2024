@@ -1,66 +1,5 @@
 import Foundation
 
-struct Position: Hashable {
-  var x: Int
-  var y: Int
-
-  init(_ x: Int, _ y: Int) {
-    self.x = x
-    self.y = y
-  }
-
-  func offsetFrom(_ position: Position) -> (Int, Int) {
-    (x - position.x, y - position.y)
-  }
-
-  func addingOffset(_ offset: (Int, Int)) -> Position {
-    Position(x + offset.0, y + offset.1)
-  }
-
-  func subtractingOffset(_ offset: (Int, Int)) -> Position {
-    Position(x - offset.0, y - offset.1)
-  }
-}
-
-struct Grid {
-  var characters: [[String]]
-  var width: Int
-  var height: Int
-
-  init(data: String) {
-    characters = data.split(separator: "\n").map {
-      $0.split(separator: "").compactMap {
-        String($0)
-      }
-    }
-    width = characters.first?.count ?? 0
-    height = characters.count
-  }
-
-  func letterAt(_ x: Int, _ y: Int) -> String? {
-    if x < 0 || x >= width || y < 0 || y >= height { return nil }
-    return characters[y][x]
-  }
-
-  func isWithinGrid(_ position: Position) -> Bool {
-    isWithinGrid(position.x, position.y)
-  }
-
-  func isWithinGrid(_ x: Int, _ y: Int) -> Bool {
-    x >= 0 && x < width && y >= 0 && y < height
-  }
-
-  func printGrid() {
-    for y in 0..<height {
-      for x in 0..<width {
-        print(characters[y][x], terminator: "")
-      }
-      print()
-    }
-    print()
-  }
-}
-
 extension String {
   func isAlphanumeric() -> Bool {
     return self.rangeOfCharacter(from: CharacterSet.alphanumerics.inverted) == nil && self != ""
@@ -76,20 +15,12 @@ struct Day08: AdventDay {
     grid = Grid(data: data)
   }
 
-  var antennas: [String: [Position]] {
-    var result: [String: [Position]] = [:]
+  var antennas: MultiValueDictionary<String, Position> {
+    var result = MultiValueDictionary<String, Position>()
 
-    for y in 0..<grid.height {
-      for x in 0..<grid.width {
-        if let symbol = grid.letterAt(x, y) {
-          if symbol.isAlphanumeric() {
-            if result[symbol] != nil {
-              result[symbol]!.append(Position(x, y))
-            } else {
-              result[symbol] = [Position(x, y)]
-            }
-          }
-        }
+    grid.iterateOverGridElements { position, symbol in
+      if symbol.isAlphanumeric() {
+        result[symbol] = position
       }
     }
     return result
@@ -143,7 +74,7 @@ struct Day08: AdventDay {
 
     var antinodes = Set<Position>()
 
-    for (_, positions) in antennas {
+    for (_, positions) in antennas.dict {
       for pairs in allPairs(positions) {
         for position in self.antinodes(pairs.0, pairs.1) {
           antinodes.insert(position)
@@ -159,7 +90,7 @@ struct Day08: AdventDay {
 
     var antinodes = Set<Position>()
 
-    for (_, positions) in antennas {
+    for (_, positions) in antennas.dict {
       for pairs in allPairs(positions) {
         for position in self.antinodesResonant(pairs.0, pairs.1) {
           antinodes.insert(position)

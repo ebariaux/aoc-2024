@@ -8,39 +8,23 @@ enum Direction: String {
 }
 
 struct Map {
-  var characters: [[String]]
-  var width: Int
-  var height: Int
-  var currentPosition: (Int, Int)
+  var grid: Grid
+  var currentPosition: Position
 
   init(data: String) {
-    characters = data.split(separator: "\n").map {
-      $0.split(separator: "").compactMap {
-        String($0)
-      }
-    }
-    width = characters.first?.count ?? 0
-    height = characters.count
+    grid = Grid(data: data)
+    currentPosition = Position(grid.width, grid.height)
 
-    for y in 0..<height {
-      for x in 0..<width {
-        if characters[y][x] == Direction.up.rawValue {
-          currentPosition = (x, y)
-          return
-        }
+    grid.iterateOverGridElements { position, element in
+      if element == Direction.up.rawValue {
+        currentPosition = position
+        return
       }
     }
-    currentPosition = (width, height)
   }
 
   func printMap() {
-    for y in 0..<height {
-      for x in 0..<width {
-        print(characters[y][x], terminator: "")
-      }
-      print()
-    }
-    print()
+    grid.printGrid()
   }
 
   /// Returns direction we're currently heading or nil when outside of map
@@ -49,51 +33,51 @@ struct Map {
 
     switch direction {
     case .up:
-      if letterAt(currentPosition.0, currentPosition.1 - 1) == "#" {
-        characters[currentPosition.1][currentPosition.0] = Direction.right.rawValue
+      if letterAt(currentPosition.x, currentPosition.y - 1) == "#" {
+        grid[currentPosition] = Direction.right.rawValue
         return move(.right)
       }
-      characters[currentPosition.1][currentPosition.0] = "X"
-      currentPosition.1 -= 1
+      grid[currentPosition] = "X"
+      currentPosition.y -= 1
       if positionInMap(currentPosition) {
-        characters[currentPosition.1][currentPosition.0] = Direction.up.rawValue
+        grid[currentPosition] = Direction.up.rawValue
       }
     case .left:
-      if letterAt(currentPosition.0 - 1, currentPosition.1) == "#" {
-        characters[currentPosition.1][currentPosition.0] = Direction.up.rawValue
+      if letterAt(currentPosition.x - 1, currentPosition.y) == "#" {
+        grid[currentPosition] = Direction.up.rawValue
         return move(.up)
       }
-      characters[currentPosition.1][currentPosition.0] = "X"
-      currentPosition.0 -= 1
+      grid.elements[currentPosition.y][currentPosition.x] = "X"
+      currentPosition.x -= 1
       if positionInMap(currentPosition) {
-        characters[currentPosition.1][currentPosition.0] = Direction.left.rawValue
+        grid[currentPosition] = Direction.left.rawValue
       }
     case .right:
-      if letterAt(currentPosition.0 + 1, currentPosition.1) == "#" {
-        characters[currentPosition.1][currentPosition.0] = Direction.down.rawValue
+      if letterAt(currentPosition.x + 1, currentPosition.y) == "#" {
+        grid[currentPosition] = Direction.down.rawValue
         return move(.down)
       }
-      characters[currentPosition.1][currentPosition.0] = "X"
-      currentPosition.0 += 1
+      grid[currentPosition] = "X"
+      currentPosition.x += 1
       if positionInMap(currentPosition) {
-        characters[currentPosition.1][currentPosition.0] = Direction.right.rawValue
+        grid[currentPosition] = Direction.right.rawValue
       }
     case .down:
-      if letterAt(currentPosition.0, currentPosition.1 + 1) == "#" {
-        characters[currentPosition.1][currentPosition.0] = Direction.left.rawValue
+      if letterAt(currentPosition.x, currentPosition.y + 1) == "#" {
+        grid[currentPosition] = Direction.left.rawValue
         return move(.left)
       }
-      characters[currentPosition.1][currentPosition.0] = "X"
-      currentPosition.1 += 1
+      grid[currentPosition] = "X"
+      currentPosition.y += 1
       if positionInMap(currentPosition) {
-        characters[currentPosition.1][currentPosition.0] = Direction.down.rawValue
+        grid[currentPosition] = Direction.down.rawValue
       }
     }
     return direction
   }
 
   var visitCount: Int {
-    characters.flatMap({ $0 }).count(where: { $0 == "X" })
+    grid.elements.flatMap({ $0 }).count(where: { $0 == "X" })
   }
 
   /// Detect if there's a loop in the map
@@ -134,19 +118,15 @@ struct Map {
   }
 
   func currentCharacter() -> String? {
-    guard positionInMap(currentPosition) else { return nil }
-
-    return characters[currentPosition.1][currentPosition.0]
+    return grid.elementAt(currentPosition)
   }
 
-  func positionInMap(_ position: (Int, Int)) -> Bool {
-    let (x, y) = position
-    return x >= 0 && x < width && y >= 0 && y < height
+  func positionInMap(_ position: Position) -> Bool {
+    return grid.isWithinGrid(position)
   }
 
   func letterAt(_ x: Int, _ y: Int) -> String? {
-    if x < 0 || x >= width || y < 0 || y >= height { return nil }
-    return characters[y][x]
+    return grid.elementAt(x, y)
   }
 }
 
@@ -170,13 +150,10 @@ struct Day06: AdventDay {
 
   func part2() -> Any {
     var count = 0
-    for y in 0..<map.height {
-      for x in 0..<map.width {
-        if (x, y) == map.currentPosition {
-          continue
-        }
+    map.grid.iterateOverGridElements { position, element in
+      if position != map.currentPosition {
         var map = self.map
-        map.characters[y][x] = "#"
+        map.grid[position] = "#"
         if map.isLooping() {
           count += 1
         }
