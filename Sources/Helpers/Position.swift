@@ -18,4 +18,8 @@ struct Position: Hashable {
   func subtractingOffset(_ offset: (Int, Int)) -> Position {
     Position(x - offset.0, y - offset.1)
   }
+
+  func moving(_ direction: Direction) -> Position {
+    self.addingOffset(direction.offset)
+  }
 }

@@ -1,12 +1,5 @@
 import Foundation
 
-enum Direction: String {
-  case up = "^"
-  case down = "v"
-  case left = "<"
-  case right = ">"
-}
-
 struct Map {
   var grid: Grid
   var currentPosition: Position
